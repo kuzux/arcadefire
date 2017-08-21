@@ -17,6 +17,9 @@ const int BALL_SIZE     = 10;
 
 const int PADDLE_XMARGIN = 10;
 
+const int PADDLE_SPEED = 5;
+const int BALL_SPEED   = 4;
+
 typedef struct {
     uint32_t y;
     uint32_t score;
@@ -47,6 +50,21 @@ void reset_game(){
 
     state.ball.x = (WIN_WIDTH - BALL_SIZE) / 2;
     state.ball.y = (WIN_HEIGHT - BALL_SIZE) / 2;
+
+    uint32_t r = rand()%100;
+    if(r<50){
+        state.ball.vx = BALL_SPEED;
+    } else {
+        state.ball.vx = -BALL_SPEED;
+    }
+
+    r = rand()%100;
+    if(r<50){
+        state.ball.vy = BALL_SPEED;
+    } else {
+        state.ball.vy = -BALL_SPEED;
+    }
+
 }
 
 void init(){
@@ -56,6 +74,63 @@ void init(){
 }
 
 void update(uint64_t ticks, SDL_Event evt){
+    // keypresses
+    if(evt.type == SDL_KEYDOWN) {
+        switch(evt.key.keysym.sym){
+            case SDLK_UP:
+                if(state.left.y > 0){
+                    state.left.y -= PADDLE_SPEED;
+                }
+                break;
+            case SDLK_DOWN:
+                if(state.left.y + PADDLE_HEIGHT < WIN_HEIGHT){
+                    state.left.y += PADDLE_SPEED;
+                }
+                break;
+        }
+    }
+
+    // collisions
+    if(state.ball.x <= PADDLE_XMARGIN + PADDLE_WIDTH
+        && state.ball.y >= state.left.y
+        && state.ball.y <= state.left.y + PADDLE_HEIGHT){
+        state.ball.vx *= -1;
+    }
+
+    if(state.ball.x >= WIN_WIDTH - (PADDLE_XMARGIN + PADDLE_WIDTH)
+        && state.ball.y >= state.right.y
+        && state.ball.y <= state.right.y + PADDLE_HEIGHT){
+        state.ball.vx *= -1;
+    }
+
+    // scoring
+    if(state.ball.x <= 0){
+        state.right.score++;
+        reset_game();
+        SDL_Delay(1000);
+        return;
+    }
+
+    if(state.ball.x >= WIN_WIDTH){
+        state.left.score++;
+        reset_game();
+        SDL_Delay(1000);
+        return;
+    }
+
+    // ball movemwent
+
+    state.ball.x += state.ball.vx;
+    state.ball.y += state.ball.vy;
+
+    // ball bouncing
+    if(state.ball.y < 0){
+        state.ball.vy *= -1;
+    }
+
+    if(state.ball.y + BALL_SIZE > WIN_HEIGHT){
+        state.ball.vy *= -1;
+    }
 }
 
 void draw_score(SDL_Surface* srf){
@@ -89,7 +164,6 @@ void draw_game(SDL_Surface* srf){
     SDL_FillRect(srf, &left, white);
     SDL_FillRect(srf, &right, white);
     SDL_FillRect(srf, &ball, white);
-
 }
 
 void draw(SDL_Window* win, SDL_Surface* srf){
@@ -170,3 +244,4 @@ int main(int argc, char** argv){
 
     return 0;
 }
+
