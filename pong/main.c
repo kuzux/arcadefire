@@ -20,13 +20,36 @@ const int PADDLE_XMARGIN = 10;
 const int PADDLE_SPEED = 5;
 const int BALL_SPEED   = 4;
 
+const int LINE_WIDTH =  10;
+const int LINE_HEIGHT = 50;
+
+// in percentage
+const int LEFT_SCORE_X  = 25;
+const int RIGHT_SCORE_X = 75;
+
+const int PIXEL_SIZE = 5;
+
+// each digit is 4x5
+const int DIGITS[10][5][4] = {
+    {{1,1,1,1},{1,0,0,1},{1,0,0,1},{1,0,0,1},{1,1,1,1}},
+    {{0,0,0,1},{0,0,0,1},{0,0,0,1},{0,0,0,1},{0,0,0,1}},
+    {{0,1,1,0},{1,0,0,1},{0,0,1,0},{0,1,0,0},{1,1,1,1}},
+    {{0,1,1,0},{0,0,0,1},{0,1,1,0},{0,0,0,1},{0,1,1,0}},
+    {{1,0,1,0},{1,0,1,0},{1,1,1,1},{0,0,1,0},{0,0,1,0}},
+    {{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}},
+    {{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}},
+    {{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}},
+    {{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}},
+    {{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}}
+};
+
 typedef struct {
-    uint32_t y;
+    int32_t y;
     uint32_t score;
 } paddle_t;
 
 typedef struct {
-    uint32_t x, y;
+    int32_t x, y;
     int32_t vx, vy;
 } ball_t;
 
@@ -71,6 +94,9 @@ void init(){
     srand(time(NULL));
 
     reset_game();
+
+    state.left.score = 0;
+    state.right.score = 0;
 }
 
 void update(uint64_t ticks, SDL_Event evt){
@@ -134,14 +160,63 @@ void update(uint64_t ticks, SDL_Event evt){
 }
 
 void draw_score(SDL_Surface* srf){
+    const int leftx  = LEFT_SCORE_X * WIN_WIDTH / 100;
+    const int rightx = RIGHT_SCORE_X * WIN_WIDTH / 100;
+
+    const uint32_t white = SDL_MapRGB(srf->format, 0xFF, 0xFF, 0xFF);
+    SDL_Rect rect;
+
+    rect.w = rect.h = PIXEL_SIZE;
+    
+    rect.y = PADDLE_XMARGIN;
+
+    int i, j;
+    for(i=0;i<5;i++){
+        rect.x = leftx;
+        for(j=0;j<4;j++){
+            if(DIGITS[state.left.score][i][j]){
+                SDL_FillRect(srf, &rect, white);
+            }
+
+            rect.x += PIXEL_SIZE;
+        }
+        rect.y += PIXEL_SIZE;
+    }
+
+    rect.y = PADDLE_XMARGIN;
+
+    for(i=0;i<5;i++){
+        rect.x = rightx;
+        for(j=0;j<4;j++){
+            if(DIGITS[state.right.score][i][j]){
+                SDL_FillRect(srf, &rect, white);
+            }
+
+            rect.x += PIXEL_SIZE;
+        }
+        rect.y += PIXEL_SIZE;
+    }
 }
 
 void draw_dashed_line(SDL_Surface* srf){
+    const int linex = (WIN_WIDTH - LINE_WIDTH) / 2;
+
+    const uint32_t white = SDL_MapRGB(srf->format, 0xFF, 0xFF, 0xFF);
+    int y;
+    SDL_Rect rect;
+    rect.x = linex;
+    rect.w = LINE_WIDTH;
+    rect.h = LINE_HEIGHT;
+
+    for(y = 0; y < WIN_HEIGHT; y += 2*LINE_HEIGHT){
+        rect.y = y;
+        SDL_FillRect(srf, &rect, white);
+    }
 }
 
 void draw_game(SDL_Surface* srf){
-    int leftx  = PADDLE_XMARGIN;
-    int rightx = WIN_WIDTH - PADDLE_XMARGIN - PADDLE_WIDTH;
+    const int leftx  = PADDLE_XMARGIN;
+    const int rightx = WIN_WIDTH - PADDLE_XMARGIN - PADDLE_WIDTH;
 
     SDL_Rect left, right, ball;
 
@@ -159,7 +234,7 @@ void draw_game(SDL_Surface* srf){
 
     ball.w = ball.h = BALL_SIZE;
 
-    uint32_t white = SDL_MapRGB(srf->format, 0xFF, 0xFF, 0xFF);
+    const uint32_t white = SDL_MapRGB(srf->format, 0xFF, 0xFF, 0xFF);
 
     SDL_FillRect(srf, &left, white);
     SDL_FillRect(srf, &right, white);
